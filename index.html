@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Virtual Letter App</title>
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .app {
+        width: 380px;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        overflow: hidden;
+    }
+
+    header {
+        background: #ff6b81;
+        color: white;
+        text-align: center;
+        padding: 15px;
+        font-weight: bold;
+    }
+
+    .section {
+        padding: 15px;
+        display: none;
+    }
+
+    .active {
+        display: block;
+    }
+
+    input, textarea {
+        width: 100%;
+        margin-top: 8px;
+        padding: 10px;
+        border-radius: 10px;
+        border: 1px solid #ddd;
+        box-sizing: border-box;
+    }
+
+    button {
+        margin-top: 10px;
+        padding: 10px;
+        width: 100%;
+        border: none;
+        border-radius: 10px;
+        background: #ff6b81;
+        color: white;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    img {
+        width: 100%;
+        margin-top: 10px;
+        border-radius: 12px;
+    }
+
+    .nav {
+        display: flex;
+    }
+
+    .nav button {
+        flex: 1;
+        border-radius: 0;
+        margin: 0;
+        background: #ff8fa3;
+    }
+
+    .nav button:hover {
+        background: #ff6b81;
+    }
+
+    .replyBox {
+        margin-top: 10px;
+        padding: 10px;
+        background: #f7f7f7;
+        border-radius: 10px;
+        font-size: 13px;
+    }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+<header>💌 Virtual Letter App</header>
+
+<div class="nav">
+    <button onclick="showTab('create')">Create</button>
+    <button onclick="showTab('view')">View</button>
+    <button onclick="showTab('reply')">Reply</button>
+</div>
+
+<!-- CREATE -->
+<div id="create" class="section active">
+    <h3>Create Letter</h3>
+
+    <input id="title" placeholder="Letter Title">
+    <textarea id="message" placeholder="Write your letter..."></textarea>
+
+    <label>Upload Photo</label>
+    <input type="file" id="photo" accept="image/*">
+
+    <label>Upload Music</label>
+    <input type="file" id="music" accept="audio/*">
+
+    <button onclick="saveLetter()">Save Letter</button>
+</div>
+
+<!-- VIEW -->
+<div id="view" class="section">
+    <h3>Your Letter</h3>
+
+    <h4 id="vTitle"></h4>
+    <p id="vMessage"></p>
+    <img id="vImage" style="display:none;">
+    <audio id="vMusic" controls style="width:100%; margin-top:10px;"></audio>
+</div>
+
+<!-- REPLY -->
+<div id="reply" class="section">
+    <h3>Reply</h3>
+
+    <textarea id="replyText" placeholder="Write a reply..."></textarea>
+    <button onclick="sendReply()">Send Reply</button>
+
+    <div id="replyList"></div>
+</div>
+
+</div>
+
+<script>
+function showTab(tab) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById(tab).classList.add('active');
+}
+
+// Save letter
+function saveLetter() {
+    const title = document.getElementById('title').value;
+    const message = document.getElementById('message').value;
+
+    const photo = document.getElementById('photo').files[0];
+    const music = document.getElementById('music').files[0];
+
+    let data = {
+        title,
+        message,
+        photo: "",
+        music: ""
+    };
+
+    if (photo) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            data.photo = e.target.result;
+            if (music) loadMusic(data, music);
+            else saveData(data);
+        };
+        reader.readAsDataURL(photo);
+    } else {
+        if (music) loadMusic(data, music);
+        else saveData(data);
+    }
+}
+
+function loadMusic(data, music) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        data.music = e.target.result;
+        saveData(data);
+    };
+    reader.readAsDataURL(music);
+}
+
+function saveData(data) {
+    localStorage.setItem("letterApp", JSON.stringify(data));
+    alert("Letter saved!");
+    loadLetter();
+}
+
+// Load letter
+function loadLetter() {
+    const data = JSON.parse(localStorage.getItem("letterApp"));
+
+    if (!data) return;
+
+    document.getElementById("vTitle").innerText = data.title;
+    document.getElementById("vMessage").innerText = data.message;
+
+    if (data.photo) {
+        const img = document.getElementById("vImage");
+        img.src = data.photo;
+        img.style.display = "block";
+    }
+
+    if (data.music) {
+        const audio = document.getElementById("vMusic");
+        audio.src = data.music;
+    }
+}
+
+// Reply system
+function sendReply() {
+    const text = document.getElementById("replyText").value;
+    if (!text) return;
+
+    let replies = JSON.parse(localStorage.getItem("replies")) || [];
+    replies.push(text);
+    localStorage.setItem("replies", JSON.stringify(replies));
+
+    document.getElementById("replyText").value = "";
+    displayReplies();
+}
+
+function displayReplies() {
+    let replies = JSON.parse(localStorage.getItem("replies")) || [];
+    const box = document.getElementById("replyList");
+
+    box.innerHTML = "<h4>Replies:</h4>";
+    replies.forEach(r => {
+        box.innerHTML += `<div class='replyBox'>💬 ${r}</div>`;
+    });
+}
+
+// Load on start
+loadLetter();
+displayReplies();
+</script>
+
+</body>
+</html>
